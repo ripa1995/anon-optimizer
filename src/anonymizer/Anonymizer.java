@@ -38,7 +38,7 @@ public class Anonymizer {
                 ".\\data\\hierarchies\\adult_race.csv",
                 ".\\data\\hierarchies\\adult_sex.csv",
                 ".\\data\\hierarchies\\adult_native-country.csv",
-                ".\\data\\hierarchies\\adult_salary-class.csv",};
+                ".\\data\\hierarchies\\adult_salary-class.csv"};
         this.datasetDelimiter = ',';
         this.hierarchyDelimiter = ';';
         this.data = null;
@@ -110,6 +110,34 @@ public class Anonymizer {
             return  false;
         }
         return true;
+    }
+
+    public String getGeneralization(){
+        // Extract
+        final ARXLattice.ARXNode optimum = result.getGlobalOptimum();
+        final List<String> qis = new ArrayList<String>(data.getDefinition().getQuasiIdentifyingAttributes());
+
+        if (optimum == null) {
+            return null;
+        }
+
+        // Initialize
+        final StringBuffer[] identifiers = new StringBuffer[qis.size()];
+        final StringBuffer[] generalizations = new StringBuffer[qis.size()];
+        int lengthI = 0;
+        int lengthG = 0;
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < qis.size(); i++) {
+            generalizations[i] = new StringBuffer();
+            generalizations[i].append(optimum.getGeneralization(qis.get(i)));
+            if (data.getDefinition().isHierarchyAvailable(qis.get(i)))
+                generalizations[i].append("/").append(data.getDefinition().getHierarchy(qis.get(i))[0].length - 1);
+        }
+        for (int i = 0; i < qis.size(); i++) {
+            sb.append(generalizations[i].toString().trim()).append(",");
+        }
+        String res = sb.toString();
+        return res.substring(0, res.length()-1);
     }
 
     private void printQuality(ARXResult result, Data data, String fileName) throws IOException {
