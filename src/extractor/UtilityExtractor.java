@@ -22,6 +22,7 @@ public class UtilityExtractor {
     ArrayList<String> selectColumn;
     ArrayList<String> havingColumn;
     ArrayList<String> groupColumn;
+    ArrayList<QueryUtility> queryUtilities;
     HashMap<String, HashMap<String,ArrayList<String>>> hashMap;
 
     public UtilityExtractor(){
@@ -34,6 +35,7 @@ public class UtilityExtractor {
         this.havingColumn = new ArrayList<String>();
         this.groupColumn = new ArrayList<String>();
         this.hashMap = new HashMap<String, HashMap<String,ArrayList<String>>>();
+        this.queryUtilities = new ArrayList<>();
     }
 
     public UtilityExtractor(String db_url, String user, String password){
@@ -46,6 +48,7 @@ public class UtilityExtractor {
         this.havingColumn = new ArrayList<String>();
         this.groupColumn = new ArrayList<String>();
         this.hashMap = new HashMap<String, HashMap<String,ArrayList<String>>>();
+        this.queryUtilities = new ArrayList<>();
     }
 
     public int runQueries(String[] queries){
@@ -82,9 +85,13 @@ public class UtilityExtractor {
     }
 
     public void extractColumn(){
-        this.filterColumn.clear();
-        this.selectColumn.clear();
+        this.queryUtilities.clear();
+        int i = 0;
         for(String explain:queriesExplain){
+            this.filterColumn = new ArrayList<>();
+            this.selectColumn = new ArrayList<>();
+            this.groupColumn = new ArrayList<>();
+            this.havingColumn = new ArrayList<>();
             JSONParser jsonParser = new JSONParser();
             try {
                 ArrayList<String> column = new ArrayList<String>();
@@ -134,7 +141,8 @@ public class UtilityExtractor {
                         }
                     }
                 }
-
+                i++;
+                queryUtilities.add(new QueryUtility(filterColumn,selectColumn,havingColumn,groupColumn,i));
             } catch (ParseException e) {
                 e.printStackTrace();
             }
@@ -144,14 +152,14 @@ public class UtilityExtractor {
     private void findKeyExpressionColumn(Object object, ArrayList<String> columns) {
         if (object instanceof JSONObject) {
             JSONObject jsonObject  = (JSONObject) object;
-            /*if(jsonObject.containsKey("EXPRESSION_AGGREGATE")) {
+            if(jsonObject.containsKey("EXPRESSION_AGGREGATE")) {
                 jsonObject = (JSONObject) jsonObject.get("EXPRESSION_AGGREGATE");
                 Object optype = jsonObject.get("OPTYPE");
                 jsonObject = (JSONObject) jsonObject.get("ARG");
                 jsonObject = (JSONObject) jsonObject.get("EXPRESSION_COLUMN");
                 Object value = jsonObject.get("VALUE");
                 columns.add("AGGTYPE."+optype.toString()+" "+value.toString());
-            } else*/
+            } else
             if(jsonObject.containsKey("EXPRESSION_LOGICAL")) {
                 jsonObject = (JSONObject) jsonObject.get("EXPRESSION_LOGICAL");
                 Object optype = jsonObject.get("OPTYPE");
@@ -219,10 +227,12 @@ public class UtilityExtractor {
     public void generateWorkloadUtility(){
         hashMap = new HashMap<String, HashMap<String,ArrayList<String>>>();
         ArrayList<String> allColumn = new ArrayList<>();
-        allColumn.addAll(filterColumn);
-        allColumn.addAll(selectColumn);
-        allColumn.addAll(havingColumn);
-        allColumn.addAll(groupColumn);
+        for (QueryUtility q: queryUtilities) {
+            allColumn.addAll(q.getFilterColumn());
+            allColumn.addAll(q.getSelectColumn());
+            allColumn.addAll(q.getGroupColumn());
+            allColumn.addAll(q.getHavingColumn());
+        }
         for(String s:allColumn){
             s = s.trim();
             String[] splitted = s.split(" ");
@@ -277,20 +287,25 @@ public class UtilityExtractor {
 
     public String getWorkloadUtilityResult(){
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("WORKLOAD: ");
-        stringBuilder.append("\n");
+        stringBuilder.append("WORKLOAD:");
+
         for(String key:hashMap.keySet()){
-            stringBuilder.append("-COLUMN: ").append(key);
             stringBuilder.append("\n");
+            stringBuilder.append("-COLUMN: ").append(key);
+
             for(String type:hashMap.get(key).keySet()){
-                stringBuilder.append("--TYPE: ").append(type);
                 stringBuilder.append("\n");
+                stringBuilder.append("--TYPE: ").append(type);
+
                 for(String value:hashMap.get(key).get(type)){
-                    stringBuilder.append("---VALUE: ").append(value);
                     stringBuilder.append("\n");
+                    stringBuilder.append("---VALUE: ").append(value);
+
                 }
             }
         }
         return stringBuilder.toString();
     }
+
+
 }
