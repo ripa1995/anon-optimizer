@@ -69,10 +69,51 @@ public class Optimizer {
             data.getDefinition().setMaximumGeneralization(qid, level);
             data.getDefinition().setMinimumGeneralization(qid, level);
         }
-        findBestCombinationForQIDnotUsed();
+        if (!findBestCombinationForQIDnotUsed()){
+            System.out.println("No Optimization found for not loosing useful QID information.");
+            System.out.println("Searching for higher level hierarchy...");
+            findBestCombinationForUsefulQI();
+        }
     }
 
-    private void findBestCombinationForQIDnotUsed() {
+    private void findBestCombinationForUsefulQI() {
+        mapQIDlevel.clear();
+        ArrayList<ArrayList<String>> suppList = new ArrayList<>();
+        for (String qid:qidToOptimize) {
+            int maxHierLevel = data.getDefinition().getHierarchy(qid)[0].length - 1;
+            ArrayList<String> values = new ArrayList<>();
+            for(int i = 0; i<=maxHierLevel;i++){
+                values.add(String.valueOf(i));
+            }
+            suppList.add(values);
+        }
+        ArrayList<String> permutations = new ArrayList<>();
+        generatePermutations(suppList,permutations,0,"");
+        double best = 0.0;
+        String[] bestHier = new String[qidToOptimize.size()];
+        for(String s: permutations){
+            String[] hierValues = s.split(" ");
+            for(int i=0; i<hierValues.length;i++){
+                data.getDefinition().setMaximumGeneralization(qidToOptimize.get(i), Integer.parseInt(hierValues[i]));
+                data.getDefinition().setMinimumGeneralization(qidToOptimize.get(i), Integer.parseInt(hierValues[i]));
+            }
+            double temp = anonymize(k,suppression);
+            if (temp>best) {
+                best = temp;
+                bestHier = hierValues;
+            }
+        }
+        for(int i=0; i<bestHier.length;i++){
+            data.getDefinition().setMaximumGeneralization(qidToOptimize.get(i), Integer.parseInt(bestHier[i]));
+            data.getDefinition().setMinimumGeneralization(qidToOptimize.get(i), Integer.parseInt(bestHier[i]));
+        }
+        for (String qid: qidNotUsed){
+            data.getDefinition().setMaximumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
+            data.getDefinition().setMinimumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
+        }
+    }
+
+    private boolean findBestCombinationForQIDnotUsed() {
         mapQIDlevel.clear();
         ArrayList<ArrayList<String>> suppList = new ArrayList<>();
         for (String qid:qidNotUsed) {
@@ -99,10 +140,14 @@ public class Optimizer {
                 bestHier = hierValues;
             }
         }
+        if(best==0.0){
+            return false;
+        }
         for(int i=0; i<bestHier.length;i++){
             data.getDefinition().setMaximumGeneralization(qidNotUsed.get(i), Integer.parseInt(bestHier[i]));
             data.getDefinition().setMinimumGeneralization(qidNotUsed.get(i), Integer.parseInt(bestHier[i]));
         }
+        return true;
     }
 
     private void generatePermutations(ArrayList<ArrayList<String>> lists, ArrayList<String> result, int depth, String current) {
