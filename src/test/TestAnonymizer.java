@@ -65,7 +65,7 @@ public class TestAnonymizer extends TestCase {
         stmt = conn.createStatement();
         importAdultDataset();
         utilityExtractor = new UtilityExtractor(databaseURL,databaseUser,databasePassword);
-        anonymizer = new Anonymizer(5,0.04,".\\data\\dataset\\adult_clear.csv",new String[]{},new String[]{},
+        anonymizer = new Anonymizer(".\\data\\dataset\\adult_clear.csv",new String[]{},new String[]{},
                 new String[]{"fnlwgt","education-num","relationship","capital-gain","capital-loss","hours-per-week"},
                 new String[]{"age","workclass","education","marital-status","occupation","race","sex","native-country","salary-class"},
                 new String[]{".\\data\\hierarchies\\adult_age.csv",
@@ -79,11 +79,6 @@ public class TestAnonymizer extends TestCase {
                         ".\\data\\hierarchies\\adult_salary-class.csv"},
                 ',',
                 ';');
-        try {
-            anonymizer.init();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     protected void tearDown() throws Exception {
@@ -156,19 +151,31 @@ public class TestAnonymizer extends TestCase {
     /**
      * Test simple workload anonymization
      */
-    public void testSimpleWorkloadAnonymization() throws SQLException {
-        try {
-            anonymizer.init();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void testSimpleWorkloadAnonymization() {
         utilityExtractor.runQueries(new String[]{"SELECT education from adult where workclass in ('private')"});
         utilityExtractor.extractColumn();
         utilityExtractor.generateWorkloadUtility();
-        anonymizer.optimize(utilityExtractor.getWorkloadUtility());
-        anonymizer.anonymize();
+        anonymizer.setKAnonymity(5);
+        anonymizer.setSuppressionLimit(0.04);
+        anonymizer.optimizedAnonymization(utilityExtractor.getWorkloadUtility());
         String result = anonymizer.getGeneralization();
         String expected = "0/3,2/2,0/2,1/1,1/1,2/2,1/1,2/2,4/4";
+
+        compareResults(result, expected);
+    }
+
+    /**
+     * Test hard workload anonymization
+     */
+    public void testHardWorkloadAnonymization() {
+        utilityExtractor.runQueries(new String[]{"SELECT education,age,salary_class,marital_status from adult where workclass in ('private')"});
+        utilityExtractor.extractColumn();
+        utilityExtractor.generateWorkloadUtility();
+        anonymizer.setKAnonymity(5);
+        anonymizer.setSuppressionLimit(0.04);
+        anonymizer.optimizedAnonymization(utilityExtractor.getWorkloadUtility());
+        String result = anonymizer.getGeneralization();
+        String expected = "1/3,2/2,0/2,0/1,1/1,2/2,1/1,0/2,2/4";
 
         compareResults(result, expected);
     }
