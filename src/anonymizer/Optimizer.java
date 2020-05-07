@@ -16,18 +16,16 @@ import java.util.List;
 
 public class Optimizer {
 
-    private int k;
-    private double suppression;
     private Data data;
     private String[] quasiIdentifier;
     private HashMap<String, HashMap<String, ArrayList<String>>> workloadUtility;
     private ArrayList<String> qidToOptimize;
     private ArrayList<String> qidNotUsed;
     private HashMap<String,Integer> mapQIDlevel;
+    private ARXConfiguration config;
 
-    public Optimizer(int k, double suppression, Data data, String[] quasiIdentifier, HashMap<String, HashMap<String, ArrayList<String>>> workloadUtility) {
-        this.k = k;
-        this.suppression = suppression;
+    public Optimizer(ARXConfiguration config, Data data, String[] quasiIdentifier, HashMap<String, HashMap<String, ArrayList<String>>> workloadUtility) {
+        this.config = config;
         this.data = data;
         this.quasiIdentifier = quasiIdentifier;
         this.workloadUtility = workloadUtility;
@@ -97,7 +95,7 @@ public class Optimizer {
                 data.getDefinition().setMaximumGeneralization(qidToOptimize.get(i), Integer.parseInt(hierValues[i]));
                 data.getDefinition().setMinimumGeneralization(qidToOptimize.get(i), Integer.parseInt(hierValues[i]));
             }
-            double temp = anonymize(k,suppression);
+            double temp = anonymize();
             if (temp>best) {
                 best = temp;
                 bestHier = hierValues;
@@ -134,7 +132,7 @@ public class Optimizer {
                 data.getDefinition().setMaximumGeneralization(qidNotUsed.get(i), Integer.parseInt(hierValues[i]));
                 data.getDefinition().setMinimumGeneralization(qidNotUsed.get(i), Integer.parseInt(hierValues[i]));
             }
-            double temp = anonymize(k,suppression);
+            double temp = anonymize();
             if (temp>best) {
                 best = temp;
                 bestHier = hierValues;
@@ -161,12 +159,10 @@ public class Optimizer {
         }
     }
 
-    private double anonymize(int k, double suppression){
+
+    private double anonymize(){
         ARXAnonymizer anonymizer = new ARXAnonymizer();
         // Execute the algorithm
-        ARXConfiguration config = ARXConfiguration.create();
-        config.addPrivacyModel(new KAnonymity(k));
-        config.setSuppressionLimit(suppression);
         try {
             data.getHandle().release();
             ARXResult result = anonymizer.anonymize(data, config);
