@@ -3,13 +3,14 @@ package anonymizer;
 import org.deidentifier.arx.*;
 import org.deidentifier.arx.aggregates.StatisticsQuality;
 import org.deidentifier.arx.aggregates.quality.QualityMeasureColumnOriented;
-import org.deidentifier.arx.criteria.KAnonymity;
+import org.deidentifier.arx.criteria.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -18,38 +19,13 @@ public class Anonymizer {
     private String[] sensitiveAttributes, quasiIdentifier, quasiIdentifierHierarchyFullPath, identifyingAttributes, insensitiveAttributes;
     private char datasetDelimiter, hierarchyDelimiter;
     private Data data;
-    private boolean optimized;
-    private ArrayList<String> qidOptimized;
-    private int k;
-    private double suppression;
     private ARXResult result;
+    private ARXConfiguration config;
 
     public Anonymizer(){
-        this.datasetFullPath = ".\\data\\dataset\\adult_clear.csv";
-        this.identifyingAttributes = new String[]{};
-        this.sensitiveAttributes = new String[]{};
-        this.insensitiveAttributes = new String[]{"fnlwgt","education-num","relationship","capital-gain","capital-loss","hours-per-week"};
-        this.quasiIdentifier = new String[]{"age","workclass","education","marital-status","occupation","race","sex","native-country","salary-class"};
-        this.quasiIdentifierHierarchyFullPath = new String[]{".\\data\\hierarchies\\adult_age.csv",
-                ".\\data\\hierarchies\\adult_workclass.csv",
-                ".\\data\\hierarchies\\adult_education.csv",
-                ".\\data\\hierarchies\\adult_marital-status.csv",
-                ".\\data\\hierarchies\\adult_occupation.csv",
-                ".\\data\\hierarchies\\adult_race.csv",
-                ".\\data\\hierarchies\\adult_sex.csv",
-                ".\\data\\hierarchies\\adult_native-country.csv",
-                ".\\data\\hierarchies\\adult_salary-class.csv"};
-        this.datasetDelimiter = ',';
-        this.hierarchyDelimiter = ';';
-        this.data = null;
-        this.optimized = false;
-        this.qidOptimized = null;
-        this.k = 5;
-        this.suppression = 0.04;
-        this.result = null;
     }
 
-    public Anonymizer(int k, double suppression, String datasetFullPath, String[] identifyingAttributes, String[] sensitiveAttributes, String[] insensitiveAttributes, String[] quasiIdentifier, String[] quasiIdentifierHierarchyFullPath, char datasetDelimiter, char hierarchyDelimiter){
+    public Anonymizer(String datasetFullPath, String[] identifyingAttributes, String[] sensitiveAttributes, String[] insensitiveAttributes, String[] quasiIdentifier, String[] quasiIdentifierHierarchyFullPath, char datasetDelimiter, char hierarchyDelimiter){
         this.datasetFullPath = datasetFullPath;
         this.identifyingAttributes = identifyingAttributes;
         this.sensitiveAttributes = sensitiveAttributes;
@@ -59,28 +35,17 @@ public class Anonymizer {
         this.datasetDelimiter = datasetDelimiter;
         this.hierarchyDelimiter = hierarchyDelimiter;
         this.data = null;
-        this.optimized = false;
-        this.qidOptimized = null;
-        this.k = k;
-        this.suppression = suppression;
         this.result = null;
+        this.config = ARXConfiguration.create();
     }
 
-    public boolean init() throws IOException {
+    public boolean setKAnonymity(int k){
+        PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(KAnonymity.class);
+        if (privacyCriterion!=null) {
+            this.config.removeCriterion(privacyCriterion);
+        }
         try {
-            data = Data.create(datasetFullPath, StandardCharsets.UTF_8, datasetDelimiter);
-            for (String att : identifyingAttributes) {
-                data.getDefinition().setAttributeType(att, AttributeType.IDENTIFYING_ATTRIBUTE);
-            }
-            for (String att : insensitiveAttributes) {
-                data.getDefinition().setAttributeType(att, AttributeType.INSENSITIVE_ATTRIBUTE);
-            }
-            for (String att : sensitiveAttributes) {
-                data.getDefinition().setAttributeType(att, AttributeType.SENSITIVE_ATTRIBUTE);
-            }
-            for (int i = 0; i < quasiIdentifier.length; i++) {
-                data.getDefinition().setAttributeType(quasiIdentifier[i], AttributeType.Hierarchy.create(quasiIdentifierHierarchyFullPath[i], StandardCharsets.UTF_8, hierarchyDelimiter));
-            }
+            this.config.addPrivacyModel(new KAnonymity(k));
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -88,20 +53,154 @@ public class Anonymizer {
         return true;
     }
 
-    public void optimize(HashMap<String,HashMap<String,ArrayList<String>>> workloadUtility ){
-        Optimizer optimizer = new Optimizer(k,suppression,data, quasiIdentifier, workloadUtility);
+    public boolean setSuppressionLimit(double s){
+        try{
+            this.config.setSuppressionLimit(s);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public boolean setOrderedDistanceTCloseness(String attribute, double t){
+        boolean result = Arrays.stream(sensitiveAttributes).anyMatch(attribute::equalsIgnoreCase);
+        if(result) {
+            PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(OrderedDistanceTCloseness.class);
+            if (privacyCriterion != null) {
+                this.config.removeCriterion(privacyCriterion);
+            }
+            try {
+                this.config.addPrivacyModel(new OrderedDistanceTCloseness(attribute, t));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return result;
+    }
+
+    public boolean setEqualDistanceTCloseness(String attribute, double t){
+        boolean result = Arrays.stream(sensitiveAttributes).anyMatch(attribute::equalsIgnoreCase);
+        if(result) {
+            PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(EqualDistanceTCloseness.class);
+            if (privacyCriterion != null) {
+                this.config.removeCriterion(privacyCriterion);
+            }
+            try {
+                this.config.addPrivacyModel(new EqualDistanceTCloseness(attribute, t));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return result;
+    }
+
+    public boolean setEntropyLDiversity(String attribute, double l){
+        boolean result = Arrays.stream(sensitiveAttributes).anyMatch(attribute::equalsIgnoreCase);
+        if(result) {
+            PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(EntropyLDiversity.class);
+            if (privacyCriterion != null) {
+                this.config.removeCriterion(privacyCriterion);
+            }
+            try {
+                this.config.addPrivacyModel(new EntropyLDiversity(attribute, l));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return result;
+    }
+
+    public boolean setDistinctLDiversity(String attribute, int l){
+        boolean result = Arrays.stream(sensitiveAttributes).anyMatch(attribute::equalsIgnoreCase);
+        if(result) {
+            PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(DistinctLDiversity.class);
+            if (privacyCriterion != null) {
+                this.config.removeCriterion(privacyCriterion);
+            }
+            try {
+                this.config.addPrivacyModel(new DistinctLDiversity(attribute, l));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return result;
+    }
+
+    public boolean setRecursiveCLDiversity(String attribute, double c, int l){
+        boolean result = Arrays.stream(sensitiveAttributes).anyMatch(attribute::equalsIgnoreCase);
+        if(result) {
+            PrivacyCriterion privacyCriterion = this.config.getPrivacyModel(RecursiveCLDiversity.class);
+            if (privacyCriterion != null) {
+                this.config.removeCriterion(privacyCriterion);
+            }
+            try {
+                this.config.addPrivacyModel(new RecursiveCLDiversity(attribute, c, l));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+        return result;
+    }
+
+    private void init() throws IOException {
+        data = Data.create(datasetFullPath, StandardCharsets.UTF_8, datasetDelimiter);
+        for (String att : identifyingAttributes) {
+            data.getDefinition().setAttributeType(att, AttributeType.IDENTIFYING_ATTRIBUTE);
+        }
+        for (String att : insensitiveAttributes) {
+            data.getDefinition().setAttributeType(att, AttributeType.INSENSITIVE_ATTRIBUTE);
+        }
+        for (String att : sensitiveAttributes) {
+            data.getDefinition().setAttributeType(att, AttributeType.SENSITIVE_ATTRIBUTE);
+        }
+        for (int i = 0; i < quasiIdentifier.length; i++) {
+            data.getDefinition().setAttributeType(quasiIdentifier[i], AttributeType.Hierarchy.create(quasiIdentifierHierarchyFullPath[i], StandardCharsets.UTF_8, hierarchyDelimiter));
+        }
+    }
+
+    private void optimize(HashMap<String,HashMap<String,ArrayList<String>>> workloadUtility ){
+        Optimizer optimizer = new Optimizer(config,data, quasiIdentifier, workloadUtility);
         optimizer.execute();
         //data = optimizer.getData();
         //qidOptimized = optimizer.getQidOptimized();
-        optimized=true;
+    }
+
+    public boolean optimizedAnonymization(HashMap<String,HashMap<String,ArrayList<String>>> workloadUtility){
+        try {
+            init();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        optimize(workloadUtility);
+        ARXAnonymizer anonymizer = new ARXAnonymizer();
+        // Execute the algorithm
+
+        try {
+            data.getHandle().release();
+            result = anonymizer.anonymize(data, config);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return  false;
+        }
+        return true;
     }
 
     public boolean anonymize(){
+        try {
+            init();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
         ARXAnonymizer anonymizer = new ARXAnonymizer();
         // Execute the algorithm
-        ARXConfiguration config = ARXConfiguration.create();
-        config.addPrivacyModel(new KAnonymity(k));
-        config.setSuppressionLimit(suppression);
         try {
             data.getHandle().release();
             result = anonymizer.anonymize(data, config);
