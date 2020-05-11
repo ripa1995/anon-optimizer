@@ -1,0 +1,49 @@
+{"QUERY":["SELECT age from adult where workclass in ('private')","SELECT age from adult where salary_class='>50K'"],
+"DATASETPATH":".\data\dataset\adult_clear.csv",
+"IDENTIFYINGATT":[],
+"SENSITIVEATT":[],
+"INSENSITIVEATT":["fnlwgt","education-num","relationship","capital-gain","capital-loss","hours-per-week"],
+"QIDATT":["age","workclass","education","marital-status","occupation","race","sex","native-country","salary-class"],
+"QIDHIERPATH":[".\\data\\hierarchies\\adult_age.csv",
+                        ".\\data\\hierarchies\\adult_workclass.csv",
+                        ".\\data\\hierarchies\\adult_education.csv",
+                        ".\\data\\hierarchies\\adult_marital-status.csv",
+                        ".\\data\\hierarchies\\adult_occupation.csv",
+                        ".\\data\\hierarchies\\adult_race.csv",
+                        ".\\data\\hierarchies\\adult_sex.csv",
+                        ".\\data\\hierarchies\\adult_native-country.csv",
+                        ".\\data\\hierarchies\\adult_salary-class.csv"],
+"DATASETDELIMITER":",",
+"HIERARCHYDELIMITER":";",
+"SAVEDIR":"./results/anonymized",
+"SAVEFILENAME":"adult_opt.csv",
+"K":5,
+"SUPPRESSION":0.04,
+"TCLOSENESS":{
+	"ORDEREDDISTANCE":{
+		"ATT":[],
+		"T":[]
+	},
+	"EQUALDISTANCE":{
+		"ATT":[],
+		"T":[]
+	}
+}
+"LDIVERSITY":{
+	"ENTROPY":{
+		"ATT":[],
+		"L":[]
+	},
+	"DISTINCT":{
+		"ATT":[],
+		"L":[]
+	}
+}
+"CLDIVERSITY":{
+	"RECURSIVE":{
+		"ATT":[],
+		"C":[],
+		"L":[]
+	}
+}
+}
