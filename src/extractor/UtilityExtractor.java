@@ -26,16 +26,6 @@ public class UtilityExtractor {
     HashMap<String, HashMap<String,ArrayList<String>>> hashMap;
 
     public UtilityExtractor(){
-        this.db_url="jdbc:hsqldb:file:data\\testdb";
-        this.user="SA";
-        this.password="";
-        this.queriesExplain = new ArrayList<String>();
-        this.filterColumn = new ArrayList<String>();
-        this.selectColumn = new ArrayList<String>();
-        this.havingColumn = new ArrayList<String>();
-        this.groupColumn = new ArrayList<String>();
-        this.hashMap = new HashMap<String, HashMap<String,ArrayList<String>>>();
-        this.queryUtilities = new ArrayList<>();
     }
 
     public UtilityExtractor(String db_url, String user, String password){
