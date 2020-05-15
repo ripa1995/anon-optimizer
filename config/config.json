@@ -1,5 +1,5 @@
-{"QUERY":["SELECT age from adult where workclass in ('private')","SELECT age from adult where salary_class='>50K'"],
-"DATASETPATH":".\data\dataset\adult_clear.csv",
+{"QUERY":["SELECT count(*) from adult where LOWER(workclass) = 'private'","SELECT count(*) from adult where age < 37","SELECT count(*) from adult where salary_class = '<=50K'"],
+"DATASETPATH":".\\data\\dataset\\adult_clear.csv",
 "IDENTIFYINGATT":[],
 "SENSITIVEATT":[],
 "INSENSITIVEATT":["fnlwgt","education-num","relationship","capital-gain","capital-loss","hours-per-week"],
@@ -28,7 +28,7 @@
 		"ATT":[],
 		"T":[]
 	}
-}
+},
 "LDIVERSITY":{
 	"ENTROPY":{
 		"ATT":[],
@@ -38,7 +38,7 @@
 		"ATT":[],
 		"L":[]
 	}
-}
+},
 "CLDIVERSITY":{
 	"RECURSIVE":{
 		"ATT":[],
