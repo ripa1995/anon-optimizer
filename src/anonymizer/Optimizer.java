@@ -68,6 +68,7 @@ public class Optimizer {
             data.getDefinition().setMinimumGeneralization(qid, level);
         }
         if (qidToOptimize.isEmpty()){
+            System.out.println("No QID in workload, setting max generalization for them...");
             for (String qid: qidNotUsed){
                 data.getDefinition().setMaximumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
                 data.getDefinition().setMinimumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
