@@ -67,7 +67,12 @@ public class Optimizer {
             data.getDefinition().setMaximumGeneralization(qid, level);
             data.getDefinition().setMinimumGeneralization(qid, level);
         }
-        if (!findBestCombinationForQIDnotUsed()){
+        if (qidToOptimize.isEmpty()){
+            for (String qid: qidNotUsed){
+                data.getDefinition().setMaximumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
+                data.getDefinition().setMinimumGeneralization(qid,data.getDefinition().getHierarchy(qid)[0].length - 1);
+            }
+        } else if (!findBestCombinationForQIDnotUsed()){
             System.out.println("No Optimization found for not loosing useful QID information.");
             System.out.println("Searching for higher level hierarchy...");
             findBestCombinationForUsefulQI();
