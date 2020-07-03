@@ -37,7 +37,7 @@ public class Initializer {
         System.out.println("Welcome to Anon-Optimizer!"+"\n"+"Before starting, please be sure to have a correct " +
                 "HSQL db set up with your required dataset table, with column names equal to the one inside " +
                 "the .csv dataset that you want to anonymize.");
-        System.out.println("Also remember to set up your config_adult.json file inside the config folder.");
+        System.out.println("Also remember to set up your config.json file inside the config folder.");
         File file = new File("./config/config.json");
         //Extract information from config file
         extractConfigs(file);
